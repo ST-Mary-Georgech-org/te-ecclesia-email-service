@@ -22,7 +22,9 @@ export const callInternalApi = async (path, payload = {}) => {
   hmac.update(bodyString);
   const signature = hmac.digest("hex");
 
-  const url = `${INTERNAL_API_BASE_URL}${path}`;
+  const cleanBaseUrl = INTERNAL_API_BASE_URL.replace(/\/+$/, "");
+  const cleanPath = path.replace(/^\/+/, "");
+  const url = `${cleanBaseUrl}/${cleanPath}`;
 
   try {
     const response = await fetch(url, {

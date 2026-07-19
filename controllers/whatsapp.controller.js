@@ -132,7 +132,7 @@ export const handleWebhook = async (req, res, next) => {
           }
         } catch (error) {
           console.error("Failed to verify token with Spring backend:", error.message);
-          await sendToMeta(fromNumber, "An error occurred during verification. Please try again later. / حدث خطأ أثناء التحقق. يرجى المحاولة مرة أخرى لاحقًا.");
+          await sendToMeta(fromNumber, "An error occurred during verification. Please try again later.\nحدث خطأ أثناء التحقق. يرجى المحاولة مرة أخرى لاحقًا.");
         }
       }
     }
