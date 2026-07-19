@@ -93,9 +93,6 @@ export const handleWebhook = async (req, res, next) => {
       return res.sendStatus(404);
     }
 
-    // Always respond 200 OK immediately per Meta requirements
-    res.sendStatus(200);
-
     // 2. Parse payload
     if (
       body.entry &&
@@ -112,31 +109,38 @@ export const handleWebhook = async (req, res, next) => {
         messageBody = message.text.body;
       }
 
-      if (!messageBody) return;
+      if (messageBody) {
+        // Check for AUTH_ token
+        const tokenMatch = messageBody.match(/AUTH_[A-Z0-9]{8}/);
+        if (tokenMatch) {
+          const token = tokenMatch[0];
 
-      // Check for AUTH_ token
-      const tokenMatch = messageBody.match(/AUTH_[A-Z0-9]{8}/);
-      if (tokenMatch) {
-        const token = tokenMatch[0];
+          // 3. Call Spring internal API to verify token
+          try {
+            const springResponse = await callInternalApi("/api/v1/internal/whatsapp/verify-token", {
+              token: token,
+              fromNumber: fromNumber,
+            });
 
-        // 3. Call Spring internal API to verify token
-        try {
-          const springResponse = await callInternalApi("/api/v1/internal/whatsapp/verify-token", {
-            token: token,
-            fromNumber: fromNumber,
-          });
-
-          // 4. Send bilingual response back based on Spring's validation status
-          if (springResponse && springResponse.message) {
-            await sendToMeta(fromNumber, springResponse.message);
+            // 4. Send bilingual response back based on Spring's validation status
+            if (springResponse && springResponse.message) {
+              await sendToMeta(fromNumber, springResponse.message);
+            }
+          } catch (error) {
+            console.error("Failed to verify token with Spring backend:", error.message);
+            await sendToMeta(fromNumber, "An error occurred during verification. Please try again later.\nحدث خطأ أثناء التحقق. يرجى المحاولة مرة أخرى لاحقًا.");
           }
-        } catch (error) {
-          console.error("Failed to verify token with Spring backend:", error.message);
-          await sendToMeta(fromNumber, "An error occurred during verification. Please try again later.\nحدث خطأ أثناء التحقق. يرجى المحاولة مرة أخرى لاحقًا.");
         }
       }
     }
+
+    // Respond 200 OK after all processing is done to prevent Vercel from freezing the Lambda function
+    return res.sendStatus(200);
   } catch (error) {
     console.error("Webhook processing error:", error);
+    // Even on error, we should return 200 so Meta doesn't infinitely retry unless we want them to
+    if (!res.headersSent) {
+      return res.sendStatus(200);
+    }
   }
 };
