@@ -2,6 +2,7 @@ import express from "express";
 import { PORT } from "./config/env.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 import emailRouter from "./routes/email.route.js";
+import whatsappRouter from "./routes/whatsapp.route.js";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger.js";
 import { renderSwaggerUiPage } from "./docs/swaggerUiPage.js";
@@ -63,6 +64,7 @@ if (isDevelopment) {
 }
 
 app.use("/api/v1", emailRouter);
+app.use("/api/v1/whatsapp", whatsappRouter);
 
 app.use(errorMiddleware);
 
